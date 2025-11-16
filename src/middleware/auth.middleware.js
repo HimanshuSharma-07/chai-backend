@@ -15,7 +15,7 @@ const verifyJWT = asyncHandler(async(req, _, next) => {
         const user = await User.findById(decodeToken?._id).select("-password -refreshToken")
     
         if (!user) {
-            // discuss about froentend
+            // discuss about frontend
             throw new ApiError(401, "Invaid Access Token")
         }
     
