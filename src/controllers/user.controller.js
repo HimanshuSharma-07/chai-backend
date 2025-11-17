@@ -51,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with  email or username already exit")
     }
     
-    const avatarLocalPath = req.files?.avatar[0]?.path
+    const avatarLocalPath = req.files?.avatar?.[0]?.path
     const coverImageLocalPath = req.files?.coverImage[0]?.path
     
     if (!avatarLocalPath) {
@@ -99,8 +99,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { username, email, password, } = req.body
 
-    if(!username || !email){
-        throw new ApiError(400, "username or eamil are required")
+    if(!(username || email)){
+        throw new ApiError(400, "username or email are required")
     }
     if(!password){
         throw new ApiError(400, "password is required")
@@ -115,15 +115,16 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "user does not exist")
     }
 
-    const isPasswordValid = await user.isPassworCorrect(password)
+    const isPasswordValid = await findUser.isPassworCorrect(password)
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid password")
     }
 
-    const {accessToken, refreshToken} = await generateAccessandRefreshTokens(user._id)
+    const {accessToken, refreshToken} = await generateAccessandRefreshTokens(findUser._id)
 
-    const  loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    const  loggedInUser = await User.findById(findUser._id)
+    .select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
