@@ -42,7 +42,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const thumbnailUrl = await uploadOnCloudinary(req.files.thumbnail[0], "thumbnail")
 
 
-    const video = Video.create({
+    const video = await Video.create({
         title,
         description,
         videoUrl,
@@ -62,7 +62,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     //TODO: get video by id
     const { videoId } = req.params
 
-    const video = Video.findById(videoId)
+    const video = await Video.findById(videoId)
     .populate("owner", "username avatar")
 
     if (!video) {
@@ -79,6 +79,65 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 })
 
+const updateVideo = asyncHandler(async (req, res) => {
+    //TODO: update video details like title, description, thumbnail
+    const { videoId } = req.params
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, "Video not found")
+    }
+
+    if (video.owner.toString() != req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to update this video")
+    }
+
+    const { title, description } = req.body
+
+    if (title) {
+        video.title = title
+    }
+
+    if (description) {
+        video.description = description
+    }
+
+    if (req.thumbnail) {
+        video.thumbnailUrl = await uploadOnCloudinary(req.files.thumbnail[0], "thumbnail")
+    }
+
+    await video.save()
+
+    res.status(200)
+    .json(
+        new ApiResponse(200, video, "Video updated successfully")
+    )
+
+})
+
+const deleteVideo = asyncHandler(async (req, res) => {
+    //TODO: delete video
+    const { videoId } = req.params
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, "Video not found")
+    }
+
+    if(video.owner.toString() != req.user._id.toString()){
+        throw new ApiError(403, "You are not authorized to delete this video")
+    }
+
+    await video.remove()
+
+    res.status(200)
+    .json(
+        new ApiResponse(200, {}, "Video deleted successfully")
+    )
+})
+
 
 
 
@@ -86,7 +145,10 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 export {
     getAllVidoes,
-
+    publishAVideo,
+    getVideoById,
+    updateVideo,
+    deleteVideo
 
 
 }
