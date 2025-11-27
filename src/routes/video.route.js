@@ -1,13 +1,19 @@
 import {Router} from "express"
-import { upload } from "../middleware/multer.middleware"
-import { verifyJWT } from "../middleware/auth.middleware"
-import { deleteVideo, getAllVidoes, getVideoById, publishAVideo, updateVideo } from "../controllers/video.controller"
-
+import { upload } from "../middleware/multer.middleware.js"
+import { verifyJWT } from "../middleware/auth.middleware.js"
+import { 
+    deleteVideo, 
+    getAllVidoes, 
+    getVideoById, 
+    publishAVideo, 
+    updateVideo 
+} from "../controllers/video.controller.js"
 
 
 const router = Router()
 
-router.route("/uploads", verifyJWT).post(
+router.route("/uploads").post(
+    verifyJWT,
     upload.fields([
         {
             name: "video",
@@ -21,8 +27,9 @@ router.route("/uploads", verifyJWT).post(
     publishAVideo
 )
 
-router.route("/").post(getAllVidoes)
-router.route("/:videoId").post(getVideoById)
+
+router.route("/all-videos").get(getAllVidoes)
+router.route("/:videoId").get(getVideoById)
 
 //secured routes
 router.route("/:videoId").put(verifyJWT, upload.single("thumbnail"), updateVideo)
