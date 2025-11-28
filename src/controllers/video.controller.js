@@ -1,6 +1,8 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { Video } from "../models/video.model";
-import { uploadOnCloudinary } from "../utils/cloudinary";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
 
 
 
@@ -15,13 +17,13 @@ const getAllVidoes = asyncHandler(async (req, res) => {
         title: { $regex: req.query.title || "", $options: "i" },
     }
 
-    const videos = Video.find(query)
+    const videos = await Video.find(query)
     .populate("owner", "username avatar")
     .sort({ createdAt: -1})
     .skip(skip)
     .limit(parseInt(limit));
 
-    res.satatus(200)
+    res.status(200)
     .json(
         new ApiResponse(200 , videos, "Videos fetched successfully")
     )
@@ -32,21 +34,36 @@ const getAllVidoes = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     // TODO: get video, upload to cloudinary, create video
 
-    const {title, description} = req.bdoy
-
-    if(!req.files || !req.files.video || req.files.thumbnail){
-        throw new APiError(400, "Video and thumbnail are required")
+    const {title, description} = req.body
+ 
+    
+    if(!req.files?.video || !req.files?.thumbnail){
+        throw new ApiError(400, "Video and thumbnail are required")
     }
 
-    const videoUrl = await uploadOnCloudinary(req.files.video[0], "video")
-    const thumbnailUrl = await uploadOnCloudinary(req.files.thumbnail[0], "thumbnail")
+    
+    const videoLocalPath = req.files?.video[0]?.path
+    const thumbnailLocalPath = req.files?.thumbnail[0]?.path
+
+        console.log("Video Local Path:", videoLocalPath);
+console.log("Thumb Local Path:", thumbnailLocalPath);
+
+    const videoUpload = await uploadOnCloudinary(videoLocalPath)
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    
+
+
+
+    if(!videoUpload || !thumbnail){
+        throw new ApiError(500, "Error uploading video or thumbnail")
+    }
 
 
     const video = await Video.create({
         title,
         description,
-        videoUrl,
-        thumbnailUrl,
+        videoFile: videoUpload.url,
+        thumbnail: thumbnail.url,
         duration: req.files.video[0].duration || 0,
         owner: req.user._id
     })
@@ -82,6 +99,10 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     //TODO: update video details like title, description, thumbnail
     const { videoId } = req.params
+
+    if (!videoId) {
+        throw new ApiError(400, "Video ID is missing")
+    }
 
     const video = await Video.findById(videoId)
 
@@ -138,8 +159,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
     )
 })
 
+const togglePublishStatus = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
 
 
+})
 
 
 
@@ -149,6 +173,5 @@ export {
     getVideoById,
     updateVideo,
     deleteVideo
-
 
 }
